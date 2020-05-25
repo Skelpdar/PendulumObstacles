@@ -1,26 +1,34 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 g = 9.82
 l = 1
 
 def Jacobian(alpha, alphadot, dt):
-    return np.array([[1, dt/2],[dt/2/l*g*np.cos(alpha),1]])
+    return lambda alpha, alphadot, dt: np.array([[1, -dt/2],[dt/2/l*g*np.cos(alpha),1]])
 
-def Jacobi_method(J, b):
+def Jacobi_method(J, b, tolerance):
     U = np.triu(J)-np.identity(2)
     L = np.tril(J)-np.identity(2)
     D = np.array([[1,0],[0,1]]) 
 
-    guess = np.array([[0.01],[0.01]])
-
-    while error > tolerance:
-        guess = np.matmul(np.matmul(-D,(L+U)),guess)+ np.matmul(D,b)
-        error = ?
-
+    guess = np.array([1,1])
+#    oldGuess = guess
+    for _ in range(100):
+        guess = np.matmul(np.matmul(-D,(L+U)),guess)+ np.matmul(D,b)        
+#        if np.linalg.norm(guess - oldGuess, 2) < tolerance*1e-3:
+#            break
+#        oldGuess = guess
+    #print("D:" + str(D))
+    #print("L:" + str(L))
+    #print("U:" + str(U))
+    #print("b:" + str(b))
+    #print("guess:" +str(guess))#, np.linalg.solve(J, np.transpose(b)))
     return guess
 
-def Newton_iter(J, initial, F):
-    delta = Jacobi_method(J, -F)
+def Newton_iter(J, initial, F, tolerance):
+    delta = Jacobi_method(J, -F, tolerance)
+    #delta = np.linalg.solve(J, -F)#to test Newtons method
     return initial + delta
     
 def Newtons(J, start, F, tolerance, dt):
@@ -28,9 +36,35 @@ def Newtons(J, start, F, tolerance, dt):
     old = start
 
     while True:
-        new = Newton_iter(Jacobian(old[0][0],old[1][0], dt), old, F(old[0][0],old[1][0]))
-
-        if np.linalg.norm(new - old, 2) < tolerance:
+        new = Newton_iter(J(old[0],old[1], dt), old, F(old[0],old[1]), tolerance)
+        old = new
+#        print(new)
+        if np.linalg.norm(F(new[0],new[1]),2) < tolerance:
             break
+    return new
 
-Jacobi_method(Jacobian(1,1,0.01))
+#Jacobi_method(Jacobian(1,1,0.01))
+
+def pendulum(deltaT, alphaOld, alphaDotOld):
+    def F(alpha, alphaDot):
+        return np.array([alpha - alphaOld - deltaT/2*(alphaDotOld + alphaDot), 
+                         alphaDot - alphaDotOld + deltaT/2*(9.82*(np.sin(alphaOld) + np.sin(alpha)))])#9,82 = g/l
+    return F
+
+initialPos = np.array([np.pi/4, 0])
+pos = initialPos
+steps = 100
+stop = 5 #seconds
+stepsize = stop/steps
+tol = 1e-2
+posList = [[],[]]
+for t in range(steps):
+    F = pendulum(stepsize, pos[0], pos[1])
+    #FPrim = Jacobian(pos[0], pos[1], stepsize)
+    posList[0].append(pos[0])
+    posList[1].append(pos[1])
+    pos = Newtons(Jacobian(pos[0], pos[1], stepsize), pos, F, tol, stepsize)
+    print(pos)
+
+print(posList)
+plt.plot(posList[0],posList[1])
