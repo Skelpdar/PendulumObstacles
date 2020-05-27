@@ -64,8 +64,11 @@ posList = [[],[]]
 
 free_pass = False
 
+times = [0]
+
 for t in range(steps):
 
+    times.append(times[-1]+stepsize)
     F = pendulum(stepsize, pos[0], pos[1])
     posList[0].append(pos[0])
     posList[1].append(pos[1])
@@ -88,7 +91,8 @@ for t in range(steps):
             #Elastically change the veloicty
             print("Collision")
             free_pass = True
-            pos[0] = alpha_obst
+            times[-1] = times[-2] + has_solution(interp,0,1,alpha_obst)[1]*stepsize
+            pos[0] = interp(has_solution(interp,0,1,alpha_obst)[1])[0][0] 
             pos[1] = -interp(has_solution(interp,0,1,alpha_obst)[1])[1][0]
         elif free_pass:
             free_pass = False
@@ -99,8 +103,8 @@ plt.xlabel("alpha (rad)")
 plt.ylabel("angular velocity (rad/s)")
 
 plt.figure(dpi = 200)
-plt.plot(np.linspace(0, stop, steps), posList[0], label = "alpha (rad)")
-plt.plot(np.linspace(0, stop, steps), posList[1], label = "alphaDot (rad/s)")
+plt.plot(times[1:], posList[0], label = "alpha (rad)")
+plt.plot(times[1:], posList[1], label = "alphaDot (rad/s)")
 plt.xlabel("t (s)")
 plt.legend()
 plt.show()
