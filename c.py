@@ -1,5 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from e import interpolate_vec
+from g import has_solution
+from e import interpolate
 
 g = 9.82
 l = 1
@@ -51,7 +54,7 @@ def pendulum(deltaT, alphaOld, alphaDotOld):
                          alphaDot - alphaDotOld + deltaT/2*(9.82*(np.sin(alphaOld) + np.sin(alpha)))])#9,82 = g/l
     return F
 
-initialPos = np.array([0, np.pi*2])
+initialPos = np.array([0, 2*np.pi])
 pos = initialPos
 steps = 200
 stop = 10 #seconds
@@ -59,11 +62,29 @@ stepsize = stop/steps
 tol = 1e-2
 posList = [[],[]]
 for t in range(steps):
+
     F = pendulum(stepsize, pos[0], pos[1])
     #FPrim = Jacobian(pos[0], pos[1], stepsize)
     posList[0].append(pos[0])
     posList[1].append(pos[1])
     pos = Newtons(Jacobian(pos[0], pos[1], stepsize), pos, F, tol, stepsize)
+
+    #Check for collisions
+    if len(posList[0]) > 2:
+        #Take the three last points
+        current_pos = np.array([[posList[0][-1]],[posList[1][-1]]])
+        last_pos = np.array([[posList[0][-2]],[posList[1][-2]]])
+        lastlast_pos = np.array([[posList[0][-3]],[posList[1][-3]]])
+
+        #Interpolate them as a function of t
+        interp = interpolate_vec(current_pos, last_pos, lastlast_pos, 0, -1, -2)
+
+        #See if it collides with the obstacle within the coming timestep
+        if has_solution(interp, 0, 1, -np.pi/6):
+            #Elastically change the veloicty
+            print("Collision")
+            pos[1] = -pos[1]
+
 #    print(pos)
 
 #print(posList)
@@ -78,3 +99,4 @@ plt.plot(np.linspace(0, stop, steps), posList[0], label = "alpha (rad)")
 plt.plot(np.linspace(0, stop, steps), posList[1], label = "alphaDot (rad/s)")
 plt.xlabel("t (s)")
 plt.legend()
+plt.show()
