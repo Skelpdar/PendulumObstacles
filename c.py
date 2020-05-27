@@ -56,15 +56,17 @@ def pendulum(deltaT, alphaOld, alphaDotOld):
 
 initialPos = np.array([0, 2*np.pi])
 pos = initialPos
-steps = 200
-stop = 10 #seconds
+steps = 10000 
+stop = 20 #seconds
 stepsize = stop/steps
 tol = 1e-2
 posList = [[],[]]
+
+free_pass = False
+
 for t in range(steps):
 
     F = pendulum(stepsize, pos[0], pos[1])
-    #FPrim = Jacobian(pos[0], pos[1], stepsize)
     posList[0].append(pos[0])
     posList[1].append(pos[1])
     pos = Newtons(Jacobian(pos[0], pos[1], stepsize), pos, F, tol, stepsize)
@@ -79,20 +81,22 @@ for t in range(steps):
         #Interpolate them as a function of t
         interp = interpolate_vec(current_pos, last_pos, lastlast_pos, 0, -1, -2)
 
+        alpha_obst = 2*np.pi*np.floor(pos[0]/(2*np.pi)+1/2)-np.pi/6
+
         #See if it collides with the obstacle within the coming timestep
-        if has_solution(interp, 0, 1, -np.pi/6):
+        if has_solution(interp, 0, 1, alpha_obst)[0] and not free_pass:
             #Elastically change the veloicty
             print("Collision")
-            pos[1] = -pos[1]
+            free_pass = True
+            pos[0] = alpha_obst
+            pos[1] = -interp(has_solution(interp,0,1,alpha_obst)[1])[1][0]
+        elif free_pass:
+            free_pass = False
 
-#    print(pos)
-
-#print(posList)
 plt.figure(dpi=200)
 plt.plot(posList[0],posList[1])
 plt.xlabel("alpha (rad)")
 plt.ylabel("angular velocity (rad/s)")
-
 
 plt.figure(dpi = 200)
 plt.plot(np.linspace(0, stop, steps), posList[0], label = "alpha (rad)")

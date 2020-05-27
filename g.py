@@ -12,8 +12,8 @@ But here we implement a more general numerical method for posterity.
 
 def has_solution(interpolated_vec,t_last, t_current, alpha_obst):
     try:
-        ridder(lambda t: interpolated_vec(t)[0][0]-alpha_obst, t_last, t_current)
-        return True
+        t = ridder(lambda t: interpolated_vec(t)[0][0]-alpha_obst, t_last, t_current)
+        return True, t
     except:
-        return False
+        return False, 0
 
