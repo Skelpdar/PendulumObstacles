@@ -51,10 +51,10 @@ def pendulum(deltaT, alphaOld, alphaDotOld):
                          alphaDot - alphaDotOld + deltaT/2*(9.82*(np.sin(alphaOld) + np.sin(alpha)))])#9,82 = g/l
     return F
 
-initialPos = np.array([np.pi/4, 0])
+initialPos = np.array([0, np.pi*2])
 pos = initialPos
-steps = 100
-stop = 5 #seconds
+steps = 200
+stop = 10 #seconds
 stepsize = stop/steps
 tol = 1e-2
 posList = [[],[]]
@@ -64,7 +64,17 @@ for t in range(steps):
     posList[0].append(pos[0])
     posList[1].append(pos[1])
     pos = Newtons(Jacobian(pos[0], pos[1], stepsize), pos, F, tol, stepsize)
-    print(pos)
+#    print(pos)
 
-print(posList)
+#print(posList)
+plt.figure(dpi=200)
 plt.plot(posList[0],posList[1])
+plt.xlabel("alpha (rad)")
+plt.ylabel("angular velocity (rad/s)")
+
+
+plt.figure(dpi = 200)
+plt.plot(np.linspace(0, stop, steps), posList[0], label = "alpha (rad)")
+plt.plot(np.linspace(0, stop, steps), posList[1], label = "alphaDot (rad/s)")
+plt.xlabel("t (s)")
+plt.legend()
